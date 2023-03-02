@@ -19,14 +19,29 @@ type MESAprocess struct {
   State         string `json:"state"`
 }
 
+// GetProcessInfo looks for information on the process corresponding to an executable
+// This will only work if the ProcessName field has already been set
+func (M *MESAprocess) GetProcessInfo () {
+
+  // first, get process id (PID)
+  M.walkProc()
+
+  // second, get process state
+  M.getMESAProcessState()
+
+  // last, get directory where executable is located
+  M.getMESAProcessRootDirectory()
+
+}
+
 // WalkProc function searches for a given `executable_name` in the /proc directory
-func (M *MESAprocess) WalkProc () {
+func (M *MESAprocess) walkProc () {
 
   // use filepath Walk inside /proc to search for executable_name in each process directory
   filepath.Walk("/proc", M.findMESAProcessID)
 }
 
-// findMESAproc: process with MESA simulation
+// findMESAproc search ID of process associated to `executable_name`
 // Idea from this post:
 // https://stackoverflow.com/questions/41060457/golang-kill-process-by-name
 func (M *MESAprocess) findMESAProcessID (path string, info os.FileInfo, err error) error {
@@ -66,7 +81,7 @@ func (M *MESAprocess) findMESAProcessID (path string, info os.FileInfo, err erro
 
 // GetMESAProcessState retrieves the state of the process from the `status` file. It must be called
 // after getting the process ID (PID) as it needs the path `/proc/PID/status`
-func (M *MESAprocess) GetMESAProcessState () error {
+func (M *MESAprocess) getMESAProcessState () error {
 
   // full path to status file
   statusFilename := "/proc/" + strconv.Itoa(M.ProcessID) + "/status"
@@ -94,7 +109,8 @@ func (M *MESAprocess) GetMESAProcessState () error {
   return errors.New("process error: state not found")
 }
 
-func (M *MESAprocess) GetMESAProcessRootDirectory () error {
+// GetMESAProcessRootDirectory locates the root directory where `executable_name` is running
+func (M *MESAprocess) getMESAProcessRootDirectory () error {
   
   // full path to status file
   statusFilename := "/proc/" + strconv.Itoa(M.ProcessID) + "/exe"
@@ -109,5 +125,3 @@ func (M *MESAprocess) GetMESAProcessRootDirectory () error {
   // return no error
   return nil
 }
-
-
