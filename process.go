@@ -1,27 +1,24 @@
 package mesastate
 
 import (
-  "bytes"
-  "bufio"
-  "os"
-  "path/filepath"
-  "strconv"
-  "strings"
-  "errors"
+	"bufio"
+	"bytes"
+	"errors"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
-// MESAproc contains information on the process running the MESA simulation such as the process id,
-// the directory where the executable is located
-type MESAprocess struct {
-  ProcessID     int    `json:"procid"`
-  RootDirectory string `json:"rootdirectory"`
-  ProcessName   string `json:"procname"`
-  State         string `json:"state"`
-}
+var (
+  ErrorPIDNotFound    = errors.New("process error: could not extract PID")
+  ErrorStatusNotFound = errors.New("process error: could not read `status` file")
+  ErrorStateNotFound  = errors.New("process error: state not found")
+)
 
 // GetProcessInfo looks for information on the process corresponding to an executable
 // This will only work if the ProcessName field has already been set
-func (M *MESAprocess) GetProcessInfo () {
+func (M *MESAEvolution) GetProcessInfo () {
 
   // first, get process id (PID)
   M.walkProc()
@@ -32,10 +29,13 @@ func (M *MESAprocess) GetProcessInfo () {
   // last, get directory where executable is located
   M.getMESAProcessRootDirectory()
 
+  // also, get current working directory
+  M.getMESAProcessCWD()
+
 }
 
 // WalkProc function searches for a given `executable_name` in the /proc directory
-func (M *MESAprocess) walkProc () {
+func (M *MESAEvolution) walkProc () {
 
   // use filepath Walk inside /proc to search for executable_name in each process directory
   filepath.Walk("/proc", M.findMESAProcessID)
@@ -44,7 +44,7 @@ func (M *MESAprocess) walkProc () {
 // findMESAproc search ID of process associated to `executable_name`
 // Idea from this post:
 // https://stackoverflow.com/questions/41060457/golang-kill-process-by-name
-func (M *MESAprocess) findMESAProcessID (path string, info os.FileInfo, err error) error {
+func (M *MESAEvolution) findMESAProcessID (path string, info os.FileInfo, err error) error {
 
   // get only process of the type `/proc/<pid>/status` where <pid> is just a number
   if strings.Count(path, "/") == 3 {
@@ -56,14 +56,14 @@ func (M *MESAprocess) findMESAProcessID (path string, info os.FileInfo, err erro
       pid, err := strconv.Atoi(path[6:strings.LastIndex(path, "/")])
       if err != nil {
         M.ProcessID = -1
-        return errors.New("process error: could not extract PID")
+        return ErrorPIDNotFound
       }
 
       // read status file. first line contains executable name
       f, err := os.ReadFile(path)
       if err != nil {
         M.ProcessID = -1
-        return errors.New("process error: could not read `status` file")
+        return ErrorStatusNotFound
       }
       processName := string(f[6:bytes.IndexByte(f, '\n')])
 
@@ -81,7 +81,7 @@ func (M *MESAprocess) findMESAProcessID (path string, info os.FileInfo, err erro
 
 // GetMESAProcessState retrieves the state of the process from the `status` file. It must be called
 // after getting the process ID (PID) as it needs the path `/proc/PID/status`
-func (M *MESAprocess) getMESAProcessState () error {
+func (M *MESAEvolution) getMESAProcessState () error {
 
   // full path to status file
   statusFilename := "/proc/" + strconv.Itoa(M.ProcessID) + "/status"
@@ -106,11 +106,11 @@ func (M *MESAprocess) getMESAProcessState () error {
     }
   }
 
-  return errors.New("process error: state not found")
+  return ErrorStateNotFound
 }
 
 // GetMESAProcessRootDirectory locates the root directory where `executable_name` is running
-func (M *MESAprocess) getMESAProcessRootDirectory () error {
+func (M *MESAEvolution) getMESAProcessRootDirectory () error {
   
   // full path to status file
   statusFilename := "/proc/" + strconv.Itoa(M.ProcessID) + "/exe"
@@ -121,6 +121,22 @@ func (M *MESAprocess) getMESAProcessRootDirectory () error {
 
   // trim path to get directory only
   M.RootDirectory = exe[0:strings.LastIndex(exe, "/")]
+
+  // return no error
+  return nil
+}
+
+// GetMESAProcessCWD locates the current working directory
+func (M *MESAEvolution) getMESAProcessCWD () error {
+  
+  // full path to status file
+  statusFilename := "/proc/" + strconv.Itoa(M.ProcessID) + "/cwd"
+  cwd, err := os.Readlink(statusFilename)
+  if err != nil {
+    return err
+  }
+
+  M.CWD = cwd
 
   // return no error
   return nil
