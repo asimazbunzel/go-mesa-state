@@ -26,17 +26,36 @@ type MESAEvolution struct {
   // flag to know if Evolution is isolated star or binary
   IsBinary bool `json:"isbinary"`
 
-  // MESA history logs
-  StarHistoryName   string `json:"starhistoryname"`
-  BinaryHistoryName string `json:"binaryhistoryname"`
+  // structs with MESA output
+  Star1 MESAstar
+  Star2 MESAstar
+  Binary MESAbinary
+}
+
+// MESAstar holds information on a MESAstar evolution
+type MESAstar struct {
   
+  // MESA history logs
+  HistoryName   string `json:"starhistoryname"`
+
   // name of columns in history logs
-  StarHistoryColumnNames   []string
-  BinaryHistoryColumnNames []string
+  HistoryColumnNames   []string
 
   // values of columns in history logs
-  StarHistoryColumnValues   []float64
-  BinaryHistoryColumnValues []float64
+  HistoryColumnValues   []float64
+}
+
+// MESAbinary holds information on a MESAbinary evolution
+type MESAbinary struct {
+  
+  // MESA history logs
+  HistoryName string `json:"binaryhistoryname"`
+
+  // name of columns in history logs
+  HistoryColumnNames []string
+
+  // values of columns in history logs
+  HistoryColumnValues []float64
 }
 
 // SetMESAEvolutionDefaults defines defaults values of MESAEvolution struct
@@ -46,8 +65,9 @@ func SetMESAEvolutionDefaults () MESAEvolution {
 
   M.OMPNumThreads = 1
 
-  M.StarHistoryName = "LOGS/history.data"
-  M.BinaryHistoryName = "binary_history.data"
+  M.Star1.HistoryName = "history.data"
+  M.Star2.HistoryName = "history.data"
+  M.Binary.HistoryName = "binary_history.data"
 
   return M
 }
@@ -55,6 +75,7 @@ func SetMESAEvolutionDefaults () MESAEvolution {
 // SetMESAEnvironVariables retrieves environment variables using OS module
 func (M *MESAEvolution) SetMESAEnvironVariables () {
 
+  // use os to get all these vars. If not found, they are empty strings
   M.MESADir = os.Getenv("MESA_DIR")
   M.MESASdkRoot = os.Getenv("MESASDK_ROOT")
   M.MESACachesDir = os.Getenv("MESA_CACHES_DIR")
@@ -65,4 +86,23 @@ func (M *MESAEvolution) SetMESAEnvironVariables () {
     return
   }
   M.OMPNumThreads = numThreads
+}
+
+// SetStarHistoryName defines the name of the history file of MESAstar
+func (M *MESAEvolution) SetStarHistoryName (id int, filename string) {
+  
+  // the name will change according the id of the star. Possible values
+  // are `1` for star 1 or `2` for star 2. In case of an isolated star
+  // evolution, set it to `1`
+  if id == 1 {
+    M.Star1.HistoryName = filename
+  } else {
+    M.Star2.HistoryName = filename
+  }
+
+}
+
+// SetBinaryHistoryName defines the name of the history file of MESAbinary
+func (M *MESAEvolution) SetBinaryHistoryName (filename string) {
+  M.Binary.HistoryName = filename
 }
