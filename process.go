@@ -27,7 +27,7 @@ func (M *MESAEvolution) GetProcessInfo () {
   M.getMESAProcessState()
 
   // last, get directory where executable is located
-  M.getMESAProcessRootDirectory()
+  M.getMESAProcessExeDirectory()
 
   // also, get current working directory
   M.getMESAProcessCWD()
@@ -109,8 +109,8 @@ func (M *MESAEvolution) getMESAProcessState () error {
   return ErrorStateNotFound
 }
 
-// GetMESAProcessRootDirectory locates the root directory where `executable_name` is running
-func (M *MESAEvolution) getMESAProcessRootDirectory () error {
+// GetMESAProcessExeDirectory locates the exec directory where `executable_name` is running
+func (M *MESAEvolution) getMESAProcessExeDirectory () error {
   
   // full path to status file
   statusFilename := "/proc/" + strconv.Itoa(M.ProcessID) + "/exe"
@@ -120,7 +120,7 @@ func (M *MESAEvolution) getMESAProcessRootDirectory () error {
   }
 
   // trim path to get directory only
-  M.RootDirectory = exe[0:strings.LastIndex(exe, "/")]
+  M.ExeDirectory = exe[0:strings.LastIndex(exe, "/")]
 
   // return no error
   return nil
