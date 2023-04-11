@@ -3,7 +3,6 @@
 
 BIN_NAME=go-mesa-state
 
-VERSION := $(shell grep "const Version " version/version.go | sed -E 's/.*"(.+)"$$/\1/')
 GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_DIRTY=$(shell test -n "`git status --porcelain`" && echo "+CHANGES" || true)
 BUILD_DATE=$(shell date '+%Y-%m-%d-%H:%M:%S')
@@ -20,7 +19,7 @@ help:
 	@echo
 
 build:
-	@echo "building ${BIN_NAME} ${VERSION}"
+	@echo "building ${BIN_NAME}"
 	@echo "GOPATH=${GOPATH}"
 	go build -ldflags "-X github.com/asimazbunzel/go-mesa-state/version.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X github.com/asimazbunzel/go-mesa-state/version.BuildDate=${BUILD_DATE}" -o bin/${BIN_NAME}
 
