@@ -14,11 +14,12 @@ type Config struct {
 
 func (c *Config) ParseYAML(filename string) error {
 
-  log.LogDebug("config/config.go", "parsing options from YAML file")
+  log.LogInfo("config/config.go", "parsing options from YAML file")
   
   // read YAML data file into bytes
   data, err := ioutil.ReadFile(filename)
   if err != nil {
+    log.LogError("config/config.go", "cannot open " + filename)
     return err
   }
 

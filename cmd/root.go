@@ -11,7 +11,7 @@ import (
 
 func Start(cfg *config.Config) {
   
-  log.LogDebug("cmd/root.go", "set argument parser")
+  log.LogInfo("cmd/root.go (func Start)", "set argument parser")
 
   var cfgFile string
   flag.StringVar(&cfgFile, "config-file", "config.yaml", "Name of configuration file")
